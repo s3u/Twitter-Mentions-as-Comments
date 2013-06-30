@@ -36,7 +36,7 @@ License: GPL2v3 or later
  *  @author Benjamin J. Balter <ben@balter.com>
  */
 
-require_once dirname( __FILE__ ) . '/includes/boilerplate/class.plugin-boilerplate.php';
+require_once dirname( __FILE__ ) . '/includes/class.plugin-boilerplate.php';
 require_once dirname( __FILE__ ) . '/includes/tlc-transients/tlc-transients.php';
 
 require_once dirname( __FILE__ ) . '/includes/codebird.php';
