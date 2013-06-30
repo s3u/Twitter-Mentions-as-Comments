@@ -39,7 +39,15 @@ License: GPL2v3 or later
 require_once dirname( __FILE__ ) . '/includes/boilerplate/class.plugin-boilerplate.php';
 require_once dirname( __FILE__ ) . '/includes/tlc-transients/tlc-transients.php';
 
-class Twitter_Mentions_As_Comments extends Plugin_Boilerplate_v_2 {
+require_once dirname( __FILE__ ) . '/includes/codebird.php';
+
+// Initialize codebird and get the access token.
+\Codebird\Codebird::setConsumerKey('YOUR_KEY', 'YOUR_SECRET');
+$cb = \Codebird\Codebird::getInstance();
+$reply = $cb->oauth2_token();
+$bearer_token = $reply->access_token;
+
+class Twitter_Mentions_As_Comments extends Plugin_Boilerplate_v_1 {
 
 	//plugin boilerplate settings
 	static $instance;
@@ -156,9 +164,10 @@ class Twitter_Mentions_As_Comments extends Plugin_Boilerplate_v_2 {
 	 * @returns int number of tweets found
 	 */
 	function insert_metions( $postID ) {
+		global $bearer_token;
 
 		//Get array of mentions
-		$mentions = $this->calls->get_mentions( $postID );
+		$mentions = $this->calls->get_mentions( $postID, $bearer_token );
 
 		//if there are no tweets, update post meta to speed up subsequent calls and return
 		if ( empty( $mentions->results ) ) {
@@ -174,14 +183,14 @@ class Twitter_Mentions_As_Comments extends Plugin_Boilerplate_v_2 {
 				continue;
 
 			//Format the author's name based on cache or call API if necessary
-			$author = $this->build_author_name( $tweet->from_user, true );
+			$author = $this->build_author_name( $tweet->user->screen_name, true );
 
 			//prepare comment array
 			$commentdata = array(
 				'comment_post_ID'      => $postID,
 				'comment_author'       => $author,
-				'comment_author_email' => $tweet->from_user . '@twitter.com',
-				'comment_author_url'   => 'http://twitter.com/' . $tweet->from_user . '/status/' . $tweet->id_str . '/',
+				'comment_author_email' => $tweet->user->screen_name . '@twitter.com',
+				'comment_author_url'   => 'http://twitter.com/' . $tweet->user->screen_name . '/status/' . $tweet->id_str . '/',
 				'comment_content'      => $tweet->text,
 				'comment_date_gmt'     => date('Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 				'comment_type'         => $this->options->comment_type
@@ -194,7 +203,7 @@ class Twitter_Mentions_As_Comments extends Plugin_Boilerplate_v_2 {
 				$comment_id = $this->new_comment( $commentdata );
 
 			//Prime profile image cache
-			$this->calls->get_profile_image( $tweet->from_user, true );
+			$this->calls->get_profile_image( $tweet->user->screen_name, true );
 
 			$this->api->do_action( 'insert_mention', $comment_id, $commentdata );
 
